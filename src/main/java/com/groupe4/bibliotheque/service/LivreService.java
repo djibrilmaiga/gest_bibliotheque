@@ -23,29 +23,36 @@ public class LivreService {
     @Autowired
     private CategorieDAO categorieDAO;
 
-    public Livre createLivre(LivreRequestDto livre) {
-        // Initialisation de la liste des auteurs
+    public Livre createLivre(LivreRequestDto livreDto) {
+        // Créer un objet Livre
+        Livre nouveauLivre = new Livre();
+
+        // Affectet le titre
+        nouveauLivre.setTitre(livreDto.getTitre());
+
+        // Récupère l'objet catégorie
+        Categorie cat = categorieDAO.findById(livreDto.getIdCategorie())
+                .orElseThrow(() -> new EntityNotFoundException("Catégorie introuvable"));
+        // Affecter l'objet catégorie
+        nouveauLivre.setCategorie(cat);
+
+        // Récuperer les auteurs dans la Bd
         Set<Auteur> auteurs = new HashSet<>();
 
-        //
-        for (Integer auteur : livre.getAuteurs()) {
-            auteurs.add(auteurDAO.findById(auteur)
-                    .orElseThrow(() -> new EntityNotFoundException("Auteur non trouvé avec l'ID : " + auteur)));
+        for(Integer idAutreur : livreDto.getAuteurs()){
+
+            auteurs.add(auteurDAO.findById(idAutreur)
+                    .orElseThrow(
+                            () -> new EntityNotFoundException("Auteur introuvable")
+                    ));
         }
-        // Récupère l'entité catégorie
-        Categorie categorie = categorieDAO.findById(livre.getIdCategorie())
-                .orElseThrow(() -> new RuntimeException("Catégorie non trouvé avec l'ID : " + livre.getIdCategorie()));
+        // Affectation des auteurs
+        nouveauLivre.setAuteurs(auteurs);
 
-        // Création d'une entité livre
-        Livre newLivre = new Livre();
-        // Conversion des données Dto vers l'entité
-        newLivre.setTitre(livre.getTitre());
-        newLivre.setCategorie(categorie);
-        newLivre.setAuteurs(auteurs);
+        // Affecter l'objet livre dans chaque auteurs
+        auteurs.forEach( auteur -> auteur.getLivres().add(nouveauLivre));
 
-
-
-        return livreDAO.save(newLivre);
+        return livreDAO.save(nouveauLivre);
     }
 
     public List<Livre> getAllLivres() {
